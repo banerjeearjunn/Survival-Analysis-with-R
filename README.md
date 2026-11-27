@@ -368,14 +368,14 @@ Summing used_event gives the patient's final overall status: 1 if they experienc
 event_id <- tapply(event, used_id, sum)
 
 ```
-Compute Cox-Snell residuals: r_CS = delta_i - M_i
+Compute Cox-Snell residuals: r_Ci = delta_i - M_i
 ```
 cs_residual <- event_id - mart_id
 ```
 
 Estimate cumulative hazard and plot against the x = y line.
 
-For a true exponential distribution with mean: Exp(1), the hazard rate is constant at lambda(t) = 1, which means its cumulative hazard function is simply H(t) = t (a straight line with intercept 0 and slope 1. Comparing H^(r_CS) visually against the 45-degree line lets us verify whether the residuals actually behave like an Exp(1) sample and therefore whether the Cox model adequately describes the data.
+For a true exponential distribution with mean: Exponential(1), the hazard rate is constant at lambda(t) = 1, which means its cumulative hazard function is simply H(t) = t (a straight line with intercept 0 and slope 1. Comparing H^(r_Ci) visually against the 45-degree line lets us verify whether the residuals actually behave like an Exponential(1) sample and therefore whether the Cox model adequately describes the data.
 
 ```
 fit_cs <- coxph(Surv(cs_residual, event_id) ~ 1, ties = "efron")
