@@ -310,7 +310,7 @@ Overall model fit is highly significant (Likelihood Ratio Test = 159.2 on 6 df, 
 
 
 In standard linear regression, a residual e_i = y_i - y^_i is useful because if the model is right, the residuals follow a known, universal reference distribution—specifically N(0, sigma^2) —regardless of what the predictors X_i were. We check model fit by verifying whether the residuals look like a sample from that reference distribution.
-In survival analysis, event times T_i are positive, right-skewed, and often censored, so simple subtraction t_i - t^_i does not produce a clean reference distribution. However, transforming t_i through the estimated cumulative hazard function r_Ci = H^(t_i|X_i) strips away the effect of the covariates X_i and the baseline hazard shape. If the model is correct, every subject's r_{Ci} is mapped onto the same universal reference distribution: Exponential(1).
+In survival analysis, event times T_i are positive, right-skewed, and often censored, so simple subtraction t_i - t^_i does not produce a clean reference distribution. However, transforming t_i through the estimated cumulative hazard function r_Ci = H^(t_i|X_i) strips away the effect of the covariates X_i and the baseline hazard shape. If the model is correct, every subject's r_Ci is mapped onto the same universal reference distribution: Exponential(1).
 Because r_Ci plays the exact diagnostic role of a regression residual (standardizing observations so they can be checked against a known theoretical distribution), Cox and Snell named it a generalized residual.
 
 Note that subtracting this from the event indicator delta_i gives the Martingale residual M_i = delta_i – r_Ci, which has mean 0 and looks even more like a traditional "observed minus expected" residual.
