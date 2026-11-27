@@ -163,8 +163,9 @@ We want to find whether our assumption that there is a time-varying term g(t) hi
 <img width="518" height="341" alt="Screenshot 2026-11-27 164202" src="https://github.com/user-attachments/assets/10c2923a-ad3e-4777-bb04-386524b0e93b" />
 
 
-Further, let us examine the proportional hazards criterion for the categorical variables arms and karnof_grp by plotting the log(-log(survival)) vs log(time) that is log(cumulative hazard) vs log(time).
+Further, let us examine the proportional hazards criterion by plotting log(-log(survival)) vs log(time), that is, log(cumulative hazard) vs log(time).
 
+This plot only applies to categorical variables, so we plot one for a variable that does not meet the proportional hazards assumption (arms) and one that does, say karnof_grp.
 
 ggsurvplot() expects a Kaplan–Meier fit created by survfit() as its first argument.
 ```
