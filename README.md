@@ -70,6 +70,8 @@ summary(fit_naive)
 <img width="440" height="173" alt="Screenshot 2026-11-18 170930" src="https://github.com/user-attachments/assets/76023335-a104-47e7-a781-808aad7b82fd" />
 
 
+We estimate beta^ by maximizing the partial log-likelihood. The covariance matrix of beta^ is the inverse of the observed Fisher Information matrix: var(beta^) = I^(-1)(beta^)
+
 ### Observation
 age, race have no effect (the confidence intervals of age and race contains 1).
 
@@ -152,7 +154,13 @@ Plot 5 (beta for race), p = 0.97102
 
 True beta sits right around −0.16 (matching coef = -0.158) with nearly zero slope across the entire follow-up, and the 95% confidence band includes 0 everywhere.
 
-Just like karnof_grp, the residuals splits into two parallel horizontal clouds—with a denser bottom band: 0 = White, 1 = Non-white, White: 71.2%, black: 28.8%, who represent the majority of events) and a sparser top band (Non-white patients).
+Just like karnof_grp, the residuals split into two parallel horizontal clouds—with a denser bottom band: 0 = White, 1 = Non-white, White: 71.2%, black: 28.8%, who represent the majority of events) and a sparser top band (Non-white patients).
+
+We want to find whether our assumption that there is a time-varying term g(t) hiding inside the true beta holds. If the covariate X_j is time-varying, and we only consider its subject-varying trend, we ignore its time component; therefore, its coefficient beta_j in the regression model must contain that time component. So, we hope that even if we ignore that time-varying part of X_j, it should be present in the Schoenfeld residuals of X_j (the raw X's used in the regression model minus their risk-weighted average values). So this can be reflected in the (Pearson) correlation coefficient between the hypothesized time-varying component and the raw observed time-varying component- the residuals: that is, t_j. But we do not use the raw Schoenfeld residuals; instead, we scale the residuals by the covariance matrix of beta^ at time t.
+
+<img width="155" height="53" alt="Screenshot 2026-11-27 170552" src="https://github.com/user-attachments/assets/d23b9c96-9ced-42c8-88bb-1449cfae82fc" />
+
+<img width="518" height="341" alt="Screenshot 2026-11-27 164202" src="https://github.com/user-attachments/assets/10c2923a-ad3e-4777-bb04-386524b0e93b" />
 
 
 ### 3. Martingale Residuals: Check Non-linearity of continuous predictors
@@ -195,7 +203,7 @@ Earlier, we wondered whether age looked statistically non-significant (p = 0.087
 
 
 ### 4. Deviance resudual & dfbeta: Outliers & influencial observations
-Deviance residuals measure how poorly the model predicted each individual patient's outcome, reshaped so that a well-fitting model scatters evenly between roughly −2.5 and +2.5.
+Deviance residuals measure how poorly the model predicted each patient's outcome, reshaped so that a well-fitting model scatters evenly between roughly −2.5 and +2.5.
 Just like regular residuals in linear regression, values close to 0 mean the model's prediction matched what actually happened to that patient.
 Positive values (> 0): The patient experienced the event earlier than the model expected (the model was too optimistic).
 Negative values (< 0): The patient survived longer than the model expected (the model was too pessimistic).
@@ -211,7 +219,7 @@ abline(h = c(-2.5, 2.5), col = "red", lty = 2)
 <img width="873" height="759" alt="image" src="https://github.com/user-attachments/assets/afccd0de-f44c-4463-bb94-6f1c5aa2dabb" />
 
 
-Deviance residuals are balanced mostly within ±2.5 with only ~20–25 mild positive outliers (~1% of n=2,139, expected by chance), confirming no extreme observation anomalies.
+Deviance residuals are balanced mostly within ±2.5, with only ~20–25 mild positive outliers (~1% of n=2,139, expected by chance), confirming no extreme observation anomalies.
 Overall strong fit. The vast majority of the 2,139 patients sit comfortably inside the red dashed lines (−2.5 to +2.5), with no bizarre spikes (like +5 or −5) that would point to corrupted data or severe model failure.
 Normal count of mild outliers: Around 20–25 patients poke slightly above +2.5 (up to ~3.3). With 2,139 people in the study, having ~1% of patients fall just past 2.5 is completely expected by pure chance—these are simply a handful of patients who looked healthy on paper (high CD4, good treatment arm) but suffered an unexpectedly early event.
 Zero negative outliers: Nobody falls below −2.5, meaning there are no high-risk patients who survived absurdly long in defiance of the model.
@@ -292,6 +300,8 @@ Overall model fit is highly significant (Likelihood Ratio Test = 159.2 on 6 df, 
 
 ## 6. Cox-Snell Residuals: Overall Goodness of Fit (Fixed for tt() interval expansion) 
 
+
+
 <img width="419" height="307" alt="Screenshot 2026-11-18 192959" src="https://github.com/user-attachments/assets/f87c005c-7427-4df3-b977-a05b16c6cf12" />
 
 <img width="416" height="307" alt="Screenshot 2026-11-18 193551" src="https://github.com/user-attachments/assets/eacf6a54-9c03-4c6a-9ec1-60741b2641cf" />
@@ -299,6 +309,25 @@ Overall model fit is highly significant (Likelihood Ratio Test = 159.2 on 6 df, 
 <img width="414" height="301" alt="Screenshot 2026-11-18 193627" src="https://github.com/user-attachments/assets/83917650-db8f-4fd2-9275-80a50fdcca7c" />
 
 
+In standard linear regression, a residual e_i = y_i - y^_i is useful because if the model is right, the residuals follow a known, universal reference distribution—specifically N(0, sigma^2) —regardless of what the predictors X_i were. We check model fit by verifying whether the residuals look like a sample from that reference distribution.
+In survival analysis, event times T_i are positive, right-skewed, and often censored, so simple subtraction t_i - t^_i does not produce a clean reference distribution. However, transforming t_i through the estimated cumulative hazard function r_Ci = H^(t_i|X_i) strips away the effect of the covariates X_i and the baseline hazard shape. If the model is correct, every subject's r_{Ci} is mapped onto the same universal reference distribution: Exponential(1).
+Because r_Ci plays the exact diagnostic role of a regression residual (standardizing observations so they can be checked against a known theoretical distribution), Cox and Snell named it a generalized residual.
+
+Note that subtracting this from the event indicator delta_i gives the Martingale residual M_i = delta_i – r_Ci, which has mean 0 and looks even more like a traditional "observed minus expected" residual.
+
+When learning that r_Ci = H^(t_i|X_i) ~ Exponential(1), the most instinct is to plot a histogram of r_Ci and overlay the Exponential(1) density curve f(r) = e^(-r) to see if they match. 
+
+But a histogram treats every number in r_Ci as a completed observation. If a subject was censored early (say at r_Ci = 0.2), their true value might have been 1.8, but the histogram puts a bar at 0.2. Because censored subjects are artificially cut short, the histogram piles up near 0 and drops off too fast, making a completely valid model look broken. To fix this, we need an estimator that accounts for right-censoring—which is why we use the Nelson-Aalen estimator instead of a histogram.
+
+Instead, we use the fact that: the cumulative hazard of the cumulative hazard is the identity function.
+
+The x-axis r_Ci: This is the model-based cumulative hazard for subject i at their observed time t_i, calculated using our fitted parametric or Cox model: r_Ci = H^(t_i|X_i).
+The y-axis H^(r_Ci) = H^( H^(t_i|X_i)): Here, we temporarily pretend that r_Ci is a "survival time" and apply the non-parametric Nelson-Aalen estimator to the pairs (r_Ci, delta_i). This estimates the cumulative hazard of the residuals themselves directly from the data, properly adjusting for which r_Ci values were censored.
+
+<img width="518" height="158" alt="Screenshot 2026-11-27 180846" src="https://github.com/user-attachments/assets/6c34c0e1-96b7-47d7-98af-34e8e1ad36bd" />
+
+
+---
 
 Calculate the martingale residual M_ij for every single time interval.
 Because coxph() automatically drops any rows with missing values (NA), extracting residuals first ensures we only work with the exact rows the model used.
@@ -316,18 +345,18 @@ head(model_frame)
 
 <img width="536" height="119" alt="Screenshot 2026-11-18 201933" src="https://github.com/user-attachments/assets/b8a68087-0527-43f6-9252-a96829f6cb78" />
 
-A new column called id has been added, this the subject id
+A new column called id has been added; this is the subject ID
 
 ```
 used_subjid <- mf[["(id)"]]
 used_event <- mf[["Surv(tstart, days, cens)"]][, "status"]
 ```
 
-Pulling used_subjid and used_event directly from fitted model guarantees that every residual lines up 1-to-1 with its true patient and event status.
+Pulling used_subjid and used_event directly from the fitted model guarantees that every residual lines up 1-to-1 with its true patient and event status.
 
 Collapse both to one value per patient_id
 
-Sum the mart_intervals to get the patient's total martingale residual across their entire follow-up M_i = sum_j(M_ij).
+Sum the mart_intervals to get the patient's total martingale residual across their entire follow-up: M_i = sum_j(M_ij).
 
 ```
 mart_id <- tapply(mart_interval, used_subjid, sum)
@@ -344,9 +373,9 @@ Compute Cox-Snell residuals: r_CS = delta_i - M_i
 cs_residual <- event_id - mart_id
 ```
 
-Estimate cumulative hazard and plot against x = y line.
+Estimate cumulative hazard and plot against the x = y line.
 
-For a true exponential distribution with mean: Exp(1), the hazard rate is constant at lambda(t) = 1, which means its cumulative hazard function is simply H(t) = t (a straight line with intercept 0 and slope 1. Comparing H^(r_CS) visually against the 45 degrees line lets us verify whether the residuals actually behave like an Exp(1) sample and therefore whether the cox model adequately describes the data.
+For a true exponential distribution with mean: Exp(1), the hazard rate is constant at lambda(t) = 1, which means its cumulative hazard function is simply H(t) = t (a straight line with intercept 0 and slope 1. Comparing H^(r_CS) visually against the 45-degree line lets us verify whether the residuals actually behave like an Exp(1) sample and therefore whether the Cox model adequately describes the data.
 
 ```
 fit_cs <- coxph(Surv(cs_residual, event_id) ~ 1, ties = "efron")
@@ -356,7 +385,7 @@ fit_cs <- coxph(Surv(cs_residual, event_id) ~ 1, ties = "efron")
 basehaz() extracts the Nelson-Aalen cumulative hazard estimate H^(CS) from the null model.
 na_haz <- basehaz(fit_cs, centered = FALSE)
 
-Finally let us plot a step function of the estimated cumulative hazard against the residual values.
+Finally, let us plot a step function of the estimated cumulative hazard against the residual values.
 
 ```
 plot(na_haz$time, na_haz$hazard,
