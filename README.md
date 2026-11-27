@@ -72,7 +72,7 @@ summary(fit_naive)
 
 We estimate beta^ by maximizing the partial log-likelihood. The covariance matrix of beta^ is the inverse of the observed Fisher Information matrix: var(beta^) = I^(-1)(beta^)
 
-### Observation
+### Observations
 age, race have no effect (the confidence intervals of age and race contains 1).
 
 All other variables have significant effects on the model.
@@ -108,7 +108,7 @@ print(zph_naive)
  - 'arms' and 'cd40' show strong non-proportionality (p < 0.01).
  - Global p < 0.001: Naive constant-HR Cox model violates PH assumption.
 
-Plot 1 (beta for arms), p = 0.03161: 
+### Plot 1 (beta for arms), p = 0.03161: 
 
 
 <img width="873" height="759" alt="image" src="https://github.com/user-attachments/assets/e641394c-70a2-4432-b4bd-8b1d7e03b67c" />
@@ -119,7 +119,7 @@ Downward Trend Over Time:
  - tends downward toward 0 by Day 1,000.
 Because arms is a 4-level categorical factor (df = 3), so the plot combines the multi-degree-of-freedom term into a single linear predictor contrast (which is why the individual residual points split into distinct horizontal bands at the top and bottom).
 
-Plot 2 (beta for cd40), p = 0.00024:
+### Plot 2 (beta for cd40), p = 0.00024:
 
 <img width="873" height="759" alt="image" src="https://github.com/user-attachments/assets/d35119f3-38ed-4587-84ac-c0c1f50e2a37" />
 
@@ -131,7 +131,7 @@ cd40 Had the Highest χ² (13.49) because cd40 is a continuous variable with tig
 
 Unlike arms (which formed horizontal bands), the dots here form a continuous cloud because cd40 takes on hundreds of distinct numerical values.
 
-Plot 3 (beta for age), p = 0.28211:
+### Plot 3 (beta for age), p = 0.28211:
 
 <img width="873" height="759" alt="image" src="https://github.com/user-attachments/assets/1acb8e47-3e71-4b9e-a600-d9e0575177f1" />
 
@@ -139,7 +139,7 @@ Aside from a tiny dip in the first ~300 days, the smoothed line runs almost flat
 
 This visually confirms the non-significant cox.zph test (p = 0.282)—whatever small effect age has does not drift over time.
 
-Plot 4 (beta for karnof_grp), p = 0.88497
+### Plot 4 (beta for karnof_grp), p = 0.88497
 
 <img width="873" height="759" alt="image" src="https://github.com/user-attachments/assets/64c3d0ee-64ee-4ea0-87c7-e7b4da175d65" />
 
@@ -148,7 +148,7 @@ The true beta (the solid curve) stays around the estimated beta (= 0.3300611) ac
 Because karnof_grp is a binary variable (Score_Below_100 vs. Score_100), the individual residuals neatly split into two parallel horizontal clouds—one near +2.3 (events in the Score_Below_100 group) and one near −1.6 (events in the Score_100 group)—while the smoothed average sits cleanly in between.
 
 
-Plot 5 (beta for race), p = 0.97102
+### Plot 5 (beta for race), p = 0.97102
 
 <img width="873" height="759" alt="image" src="https://github.com/user-attachments/assets/d079d5db-8812-4df9-b007-0ed492ce5785" />
 
@@ -163,7 +163,57 @@ We want to find whether our assumption that there is a time-varying term g(t) hi
 <img width="518" height="341" alt="Screenshot 2026-11-27 164202" src="https://github.com/user-attachments/assets/10c2923a-ad3e-4777-bb04-386524b0e93b" />
 
 
-### 3. Martingale Residuals: Check Non-linearity of continuous predictors
+Further, let us examine the proportional hazards criterion for the categorical variables arms and karnof_grp by plotting the log(-log(survival)) vs log(time) that is log(cumulative hazard) vs log(time).
+
+
+ggsurvplot() expects a Kaplan–Meier fit created by survfit() as its first argument.
+```
+km_arms <- survfit(Surv(days, cens) ~ arms, data = hiv)
+```
+Plot for 'arms':
+```
+ggsurvplot(km_arms, data = hiv, fun = "cloglog",
+           xlab = "Log(Time in Days)",
+           ylab = "Log(-Log(Survival))",
+           title = "Log-Cumulative Hazard: Treatment Arms")
+
+```
+<img width="1462" height="759" alt="image" src="https://github.com/user-attachments/assets/89da3f4d-560c-46d1-b720-5db5644afcfc" />
+
+### Observations: 
+
+Log-Cumulative Hazard (cloglog) plot for Treatment Arms visually confirms why arms failed the proportional hazards test (cox.zph p = 0.0316): the four curves cross early in follow-up (before Day 200) and gradually narrow toward the end of the trial.
+
+From Day 200 onward, the three active regimens (ZDV_ddI, ZDV_Zal, ddI_only) merge into a single overlapping bundle, whereas ZDV_only (red) stays distinctly higher throughout the rest of the trial. So all these three alternative regimens achieved a similar level of protection; their cumulative hazard curves overlap tightly from Day 200 onward.
+
+This happens because ZDV monotherapy is clinically inferior to the other three treatments—patients on ZDV_only experience disease progression or death at roughly twice the rate (HR ≈ 0.46 to 0.56 for the three active arms vs. ZDV_only). On a cloglog plot, a higher curve means a higher cumulative hazard (worse survival).
+
+
+ - Days 200-300: the vertical gap is wide (~1.0 log-hazard units apart).
+ - Days 1,000+: however, that vertical gap shrinks to about ~0.5 log-hazard units—meaning ZDV_only slowly converges partway toward the active bundle late in follow-up.
+
+
+
+```
+km_karnof <- survfit(Surv(days, cens) ~ karnof_grp, data = hiv)
+
+```
+Plot for 'karnof_grp':
+```
+ggsurvplot(km_karnof, data = hiv, fun = "cloglog",
+           xlab = "Log(Time in Days)",
+           ylab = "Log(-Log(Survival))",
+           title = "Log-Cumulative Hazard: Karnofsky Group")
+```
+
+<img width="1462" height="759" alt="image" src="https://github.com/user-attachments/assets/8e37b8dd-8fe1-4ca1-9a8f-cd1c904dfcdb" />
+
+### Observations:
+
+The two curves for the two Karnofsky groups never cross and stay virtually parallel across the entire follow-up period - proportional hazards assumption is satisfied.
+
+
+## 3. Martingale Residuals: Check Non-linearity of continuous predictors
 
 For each time interval, the martingale residual measures the difference between what actually happened (whether the event occurred in that slice, 0 or 1) and what the model expected to happen based on the patient's covariates and strata.
 ```
@@ -171,7 +221,7 @@ fit_null  <- coxph(Surv(days, cens) ~ 1, data = hiv)
 mart_null <- residuals(fit_null, type = "martingale")
 ```
 
-Martingale Residuals vs Baseline cd40
+### Martingale Residuals vs Baseline cd40
 
 ```
 plot(hiv$cd40, mart_null, xlab = "Baseline cd40 Count", ylab = "Martingale Residuals",
@@ -187,7 +237,7 @@ A clear "elbow" pattern is visible: risk drops sharply as cd40 increases from 0 
 So the variable cd40 needs a spline (pspline(cd40)) or log/sqrt transformation.
 
 
-Martingale Residuals vs Age
+### Martingale Residuals vs Age
 
 ```
 plot(hiv$age, mart_null, xlab = "Age (years)", ylab = "Martingale Residuals",
@@ -203,7 +253,9 @@ Earlier, we wondered whether age looked statistically non-significant (p = 0.087
 
 
 ### 4. Deviance resudual & dfbeta: Outliers & influencial observations
+
 Deviance residuals measure how poorly the model predicted each patient's outcome, reshaped so that a well-fitting model scatters evenly between roughly −2.5 and +2.5.
+
 Just like regular residuals in linear regression, values close to 0 mean the model's prediction matched what actually happened to that patient.
 Positive values (> 0): The patient experienced the event earlier than the model expected (the model was too optimistic).
 Negative values (< 0): The patient survived longer than the model expected (the model was too pessimistic).
@@ -218,6 +270,7 @@ abline(h = c(-2.5, 2.5), col = "red", lty = 2)
 ```
 <img width="873" height="759" alt="image" src="https://github.com/user-attachments/assets/afccd0de-f44c-4463-bb94-6f1c5aa2dabb" />
 
+### Observations
 
 Deviance residuals are balanced mostly within ±2.5, with only ~20–25 mild positive outliers (~1% of n=2,139, expected by chance), confirming no extreme observation anomalies.
 Overall strong fit. The vast majority of the 2,139 patients sit comfortably inside the red dashed lines (−2.5 to +2.5), with no bizarre spikes (like +5 or −5) that would point to corrupted data or severe model failure.
@@ -292,10 +345,10 @@ summary(fit)
 
 Final Time-Varying Stratified Cox Model Summary (fit):
 
-- 1. Time-Varying CD4 Effect: Both the baseline cd40 main effect (coef = -0.0216, p = 7.59e-06) and its log-time interaction tt(cd40) (coef = +0.00281, p = 0.000245) are highly significant. Because the interaction is positive, the strong early protective effect of higher baseline CD4 counts diminishes over time (e.g., for +100 CD4 cells, HR = 0.36 at Day 60 vs. HR = 0.72 at
+ - Time-Varying CD4 Effect: Both the baseline cd40 main effect (coef = -0.0216, p = 7.59e-06) and its log-time interaction tt(cd40) (coef = +0.00281, p = 0.000245) are highly significant. Because the interaction is positive, the strong early protective effect of higher baseline CD4 counts diminishes over time (e.g., for +100 CD4 cells, HR = 0.36 at Day 60 vs. HR = 0.72 at
 Day 700), resolving the non-proportionality observed in cox.zph().
-- 2. Treatment Efficacy: After stratifying by Karnofsky score and race and accounting for time-varying CD4 risk, all alternative regimens significantly outperform ZDV monotherapy (p < 0.0001): ZDV+ddI reduces hazard by 53.8% (HR = 0.46, 95% CI: 0.36-0.59), ZDV+Zal by 48.8% (HR = 0.51, 95% CI: 0.40-0.65), and ddI alone by 43.9% (HR = 0.56, 95% CI: 0.45-0.70).
-- 3. Age & Model Fit: Age remains non-significant (HR = 1.008 per year, p = 0.099).
+ - Treatment Efficacy: After stratifying by Karnofsky score and race and accounting for time-varying CD4 risk, all alternative regimens significantly outperform ZDV monotherapy (p < 0.0001): ZDV+ddI reduces hazard by 53.8% (HR = 0.46, 95% CI: 0.36-0.59), ZDV+Zal by 48.8% (HR = 0.51, 95% CI: 0.40-0.65), and ddI alone by 43.9% (HR = 0.56, 95% CI: 0.45-0.70).
+ - Age & Model Fit: Age remains non-significant (HR = 1.008 per year, p = 0.099).
 Overall model fit is highly significant (Likelihood Ratio Test = 159.2 on 6 df, p < 2e-16; Concordance = 0.654).
 
 ## 6. Cox-Snell Residuals: Overall Goodness of Fit (Fixed for tt() interval expansion) 
@@ -321,8 +374,9 @@ But a histogram treats every number in r_Ci as a completed observation. If a sub
 
 Instead, we use the fact that: the cumulative hazard of the cumulative hazard is the identity function.
 
-The x-axis r_Ci: This is the model-based cumulative hazard for subject i at their observed time t_i, calculated using our fitted parametric or Cox model: r_Ci = H^(t_i|X_i).
-The y-axis H^(r_Ci) = H^( H^(t_i|X_i)): Here, we temporarily pretend that r_Ci is a "survival time" and apply the non-parametric Nelson-Aalen estimator to the pairs (r_Ci, delta_i). This estimates the cumulative hazard of the residuals themselves directly from the data, properly adjusting for which r_Ci values were censored.
+ - The x-axis r_Ci: This is the model-based cumulative hazard for subject i at their observed time t_i, calculated using our fitted parametric or Cox model: r_Ci = H^(t_i|X_i).
+
+ - The y-axis H^(r_Ci) = H^( H^(t_i|X_i)): Here, we temporarily pretend that r_Ci is a "survival time" and apply the non-parametric Nelson-Aalen estimator to the pairs (r_Ci, delta_i). This estimates the cumulative hazard of the residuals themselves directly from the data, properly adjusting for which r_Ci values were censored.
 
 <img width="518" height="158" alt="Screenshot 2026-11-27 180846" src="https://github.com/user-attachments/assets/6c34c0e1-96b7-47d7-98af-34e8e1ad36bd" />
 
@@ -330,6 +384,7 @@ The y-axis H^(r_Ci) = H^( H^(t_i|X_i)): Here, we temporarily pretend that r_Ci i
 ---
 
 Calculate the martingale residual M_ij for every single time interval.
+
 Because coxph() automatically drops any rows with missing values (NA), extracting residuals first ensures we only work with the exact rows the model used.
 
 ```
@@ -399,7 +454,7 @@ abline(0, 1, col = "red", lty = 2, lwd = 2)
 <img width="877" height="759" alt="image" src="https://github.com/user-attachments/assets/28aac544-c76a-4824-b23d-504ccd40dbe8" />
 
 
-Observations:
+### Observations:
  - Lower-to-Mid Range (0.0 to 0.5): The empirical cumulative hazard aligns almost seamlessly with the theoretical y = x line, meaning the model predicts risk accurately where the bulk of the observations and events occur.
  - Upper-Middle Range (0.5 to 0.8): There is a very slight downward dip below the red line, which is minor and well within normal sampling variability rather than a systematic model failure.
  - Upper Tail (0.8 to 1.1): The larger vertical jumps near 0.85 and 1.0 are expected: at large residual values, fewer patients remain at risk due to prior events and censoring, so single events create larger step increments in the Nelson-Aalen estimator.
